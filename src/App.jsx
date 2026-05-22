@@ -16,8 +16,9 @@ const TABS = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('map');
-  const [route, setRoute]         = useState(null);
+  const [activeTab,      setActiveTab]      = useState('map');
+  const [route,          setRoute]          = useState(null);
+  const [projectedPoint, setProjectedPoint] = useState(null);
   const geo = useGeolocation();
 
   const switchTo = (id) => setActiveTab(id);
@@ -45,11 +46,19 @@ export default function App() {
 
       {/* Content */}
       <main className="flex-1 overflow-hidden tab-content">
-        {activeTab === 'map'      && <MapView      {...geo} route={route} />}
-        {activeTab === 'location' && <LocationPanel {...geo} />}
-        {activeTab === 'camera'   && <CameraPanel  location={geo.location} />}
-        {activeTab === 'share'    && <SharePanel   {...geo} />}
-        {activeTab === 'routes'   && (
+        {activeTab === 'map' && (
+          <MapView {...geo} route={route} projectedPoint={projectedPoint} />
+        )}
+        {activeTab === 'location' && (
+          <LocationPanel
+            {...geo}
+            onProjectedPoint={setProjectedPoint}
+            onViewMap={() => switchTo('map')}
+          />
+        )}
+        {activeTab === 'camera'  && <CameraPanel  location={geo.location} />}
+        {activeTab === 'share'   && <SharePanel   {...geo} />}
+        {activeTab === 'routes'  && (
           <RoutePanel {...geo} route={route} setRoute={setRoute} onViewMap={() => switchTo('map')} />
         )}
       </main>

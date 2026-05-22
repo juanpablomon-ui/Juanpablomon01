@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check, MessageCircle, Mail, Share2, ExternalLink } from 'lucide-react';
-import { toDMS, toUTM } from '../utils/coords';
+import { toDMS, toUTM, toMGRS } from '../utils/coords';
 
 function CopyButton({ value, label }) {
   const [copied, setCopied] = useState(false);
@@ -63,13 +63,15 @@ export function SharePanel({ location, loading }) {
   const decimal  = `${location.lat.toFixed(6)}, ${location.lon.toFixed(6)}`;
   const dms      = `${toDMS(location.lat, true)}, ${toDMS(location.lon, false)}`;
   const utm      = toUTM(location.lat, location.lon);
+  const mgrs     = toMGRS(location.lat, location.lon);
   const utmStr   = `${utm.zone}${utm.band} ${utm.hemisphere}  E ${utm.easting}  N ${utm.northing}`;
+  const mgrsStr  = mgrs ? mgrs.toString() : 'n/d';
   const mapsUrl  = `https://www.google.com/maps?q=${location.lat},${location.lon}`;
   const earthUrl = `https://earth.google.com/web/@${location.lat},${location.lon},500a,1000d,35y,0h,0t,0r`;
   const wazeUrl  = `https://waze.com/ul?ll=${location.lat},${location.lon}&navigate=yes`;
   const appleMapsUrl = `https://maps.apple.com/?q=${location.lat},${location.lon}`;
 
-  const fullMessage = `📍 Mi ubicación:\nGeog. Dec.: ${decimal}\nGMS: ${dms}\nUTM: ${utmStr}\n\n🗺️ ${mapsUrl}`;
+  const fullMessage = `📍 Mi ubicación:\nGeog. Dec.: ${decimal}\nGMS: ${dms}\nUTM: ${utmStr}\nMGRS: ${mgrsStr}\n\n🗺️ ${mapsUrl}`;
   const shortMessage = `📍 ${decimal}\n${mapsUrl}`;
 
   return (
@@ -102,6 +104,24 @@ export function SharePanel({ location, loading }) {
             N {utm.northing.toLocaleString('es')} m
           </div>
         </div>
+
+        {/* MGRS */}
+        {mgrs && (
+          <div className="border-t border-slate-700 pt-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-slate-400 uppercase tracking-wider">MGRS (Militares)</span>
+              <CopyButton value={mgrs.toString()} label="Copiar" />
+            </div>
+            <div className="font-mono text-violet-400 text-sm leading-relaxed">
+              <span className="text-slate-500 text-xs">GZD </span>{mgrs.gzd}&nbsp;
+              <span className="text-slate-500 text-xs">ID </span>{mgrs.sqid}<br />
+              <span className="text-slate-500 text-xs">E </span>{mgrs.e}&nbsp;&nbsp;
+              <span className="text-slate-500 text-xs">N </span>{mgrs.n}
+            </div>
+            <div className="text-[10px] text-slate-600 mt-0.5">Compacto: {mgrs.compact()}</div>
+          </div>
+        )}
+
         <div className="border-t border-slate-700 pt-4">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs text-slate-400 uppercase tracking-wider">Enlace Google Maps</span>

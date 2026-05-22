@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Camera, Download, Share2, RotateCcw, X } from 'lucide-react';
-import { toDMS, toUTM } from '../utils/coords';
+import { toDMS, toUTM, toMGRS } from '../utils/coords';
 
 function drawRoundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -65,6 +65,7 @@ export function CameraPanel({ location }) {
     if (location) {
       const now      = new Date();
       const utm      = toUTM(location.lat, location.lon);
+      const mgrs     = toMGRS(location.lat, location.lon);
       const fontSize = Math.max(20, Math.floor(canvas.width * 0.022));
       ctx.font = `bold ${fontSize}px "Courier New", monospace`;
 
@@ -76,6 +77,10 @@ export function CameraPanel({ location }) {
         `Z ${utm.zone}${utm.band} ${utm.hemisphere}`,
         `E: ${utm.easting.toLocaleString('es')} m`,
         `N: ${utm.northing.toLocaleString('es')} m`,
+        ...(mgrs ? [
+          '── MGRS ──',
+          `${mgrs.gzd} ${mgrs.sqid} ${mgrs.e} ${mgrs.n}`,
+        ] : []),
         '─────────────────────────',
         ...(location.alt != null ? [`ALT: ${Math.round(location.alt)} m`] : []),
         `ACC: ±${Math.round(location.accuracy || 0)} m`,
@@ -186,9 +191,10 @@ export function CameraPanel({ location }) {
           {/* Live GPS overlay */}
           {location && (() => {
             const u = toUTM(location.lat, location.lon);
+            const m = toMGRS(location.lat, location.lon);
             return (
               <div className="absolute bottom-24 left-3 font-mono text-xs leading-relaxed
-                bg-black/65 border border-green-500/70 rounded-xl px-3 py-2 text-green-400 space-y-0.5">
+                bg-black/70 border border-green-500/70 rounded-xl px-3 py-2 text-green-400 space-y-0.5">
                 <div className="text-green-600 text-[10px]">─ Geográficas ─</div>
                 <div>LAT: {location.lat.toFixed(6)}°</div>
                 <div>LON: {location.lon.toFixed(6)}°</div>
@@ -196,6 +202,12 @@ export function CameraPanel({ location }) {
                 <div>Z {u.zone}{u.band} {u.hemisphere}</div>
                 <div>E: {u.easting.toLocaleString('es')} m</div>
                 <div>N: {u.northing.toLocaleString('es')} m</div>
+                {m && (
+                  <>
+                    <div className="text-green-600 text-[10px] pt-0.5">─ MGRS ─</div>
+                    <div className="text-violet-300">{m.gzd} {m.sqid} {m.e} {m.n}</div>
+                  </>
+                )}
                 {location.alt != null && (
                   <div className="pt-0.5">ALT: {Math.round(location.alt)} m</div>
                 )}
