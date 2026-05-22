@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Camera, Download, Share2, RotateCcw, X } from 'lucide-react';
+import { toDMS, toUTM } from '../utils/coords';
 
 function drawRoundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -63,12 +64,19 @@ export function CameraPanel({ location }) {
 
     if (location) {
       const now      = new Date();
+      const utm      = toUTM(location.lat, location.lon);
       const fontSize = Math.max(20, Math.floor(canvas.width * 0.022));
       ctx.font = `bold ${fontSize}px "Courier New", monospace`;
 
       const lines = [
+        '── Geográficas (WGS84) ──',
         `LAT: ${location.lat.toFixed(6)}°`,
         `LON: ${location.lon.toFixed(6)}°`,
+        '── UTM ──',
+        `Z ${utm.zone}${utm.band} ${utm.hemisphere}`,
+        `E: ${utm.easting.toLocaleString('es')} m`,
+        `N: ${utm.northing.toLocaleString('es')} m`,
+        '─────────────────────────',
         ...(location.alt != null ? [`ALT: ${Math.round(location.alt)} m`] : []),
         `ACC: ±${Math.round(location.accuracy || 0)} m`,
         now.toLocaleString('es-MX'),
@@ -176,15 +184,25 @@ export function CameraPanel({ location }) {
           />
 
           {/* Live GPS overlay */}
-          {location && (
-            <div className="absolute bottom-24 left-3 font-mono text-xs leading-relaxed
-              bg-black/60 border border-green-500/70 rounded-xl px-3 py-2 text-green-400">
-              <div>LAT: {location.lat.toFixed(6)}°</div>
-              <div>LON: {location.lon.toFixed(6)}°</div>
-              {location.alt != null && <div>ALT: {Math.round(location.alt)} m</div>}
-              <div>ACC: ±{Math.round(location.accuracy || 0)} m</div>
-            </div>
-          )}
+          {location && (() => {
+            const u = toUTM(location.lat, location.lon);
+            return (
+              <div className="absolute bottom-24 left-3 font-mono text-xs leading-relaxed
+                bg-black/65 border border-green-500/70 rounded-xl px-3 py-2 text-green-400 space-y-0.5">
+                <div className="text-green-600 text-[10px]">─ Geográficas ─</div>
+                <div>LAT: {location.lat.toFixed(6)}°</div>
+                <div>LON: {location.lon.toFixed(6)}°</div>
+                <div className="text-green-600 text-[10px] pt-0.5">─ UTM ─</div>
+                <div>Z {u.zone}{u.band} {u.hemisphere}</div>
+                <div>E: {u.easting.toLocaleString('es')} m</div>
+                <div>N: {u.northing.toLocaleString('es')} m</div>
+                {location.alt != null && (
+                  <div className="pt-0.5">ALT: {Math.round(location.alt)} m</div>
+                )}
+                <div>ACC: ±{Math.round(location.accuracy || 0)} m</div>
+              </div>
+            );
+          })()}
 
           {/* Camera controls */}
           <div className="absolute bottom-0 left-0 right-0 flex items-center justify-around py-5

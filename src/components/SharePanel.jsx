@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check, MessageCircle, Mail, Share2, ExternalLink } from 'lucide-react';
-
-function toDMS(decimal, isLat) {
-  const dir = isLat ? (decimal >= 0 ? 'N' : 'S') : (decimal >= 0 ? 'E' : 'O');
-  const abs  = Math.abs(decimal);
-  const deg  = Math.floor(abs);
-  const minF = (abs - deg) * 60;
-  const min  = Math.floor(minF);
-  const sec  = ((minF - min) * 60).toFixed(2);
-  return `${deg}° ${min}' ${sec}" ${dir}`;
-}
+import { toDMS, toUTM } from '../utils/coords';
 
 function CopyButton({ value, label }) {
   const [copied, setCopied] = useState(false);
@@ -71,12 +62,14 @@ export function SharePanel({ location, loading }) {
 
   const decimal  = `${location.lat.toFixed(6)}, ${location.lon.toFixed(6)}`;
   const dms      = `${toDMS(location.lat, true)}, ${toDMS(location.lon, false)}`;
+  const utm      = toUTM(location.lat, location.lon);
+  const utmStr   = `${utm.zone}${utm.band} ${utm.hemisphere}  E ${utm.easting}  N ${utm.northing}`;
   const mapsUrl  = `https://www.google.com/maps?q=${location.lat},${location.lon}`;
   const earthUrl = `https://earth.google.com/web/@${location.lat},${location.lon},500a,1000d,35y,0h,0t,0r`;
   const wazeUrl  = `https://waze.com/ul?ll=${location.lat},${location.lon}&navigate=yes`;
   const appleMapsUrl = `https://maps.apple.com/?q=${location.lat},${location.lon}`;
 
-  const fullMessage = `📍 Mi ubicación:\nDecimal: ${decimal}\nDMS: ${dms}\n\n🗺️ Ver en Google Maps:\n${mapsUrl}`;
+  const fullMessage = `📍 Mi ubicación:\nGeog. Dec.: ${decimal}\nGMS: ${dms}\nUTM: ${utmStr}\n\n🗺️ ${mapsUrl}`;
   const shortMessage = `📍 ${decimal}\n${mapsUrl}`;
 
   return (
@@ -86,17 +79,28 @@ export function SharePanel({ location, loading }) {
       <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700/50 space-y-4">
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-slate-400 uppercase tracking-wider">Decimal (WGS84)</span>
+            <span className="text-xs text-slate-400 uppercase tracking-wider">Geográficas Decimales</span>
             <CopyButton value={decimal} label="Copiar" />
           </div>
           <div className="font-mono text-emerald-400 text-sm">{decimal}</div>
         </div>
         <div className="border-t border-slate-700 pt-4">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-slate-400 uppercase tracking-wider">Grados Min Seg</span>
+            <span className="text-xs text-slate-400 uppercase tracking-wider">Geog. GMS (° ′ ″)</span>
             <CopyButton value={dms} label="Copiar" />
           </div>
           <div className="font-mono text-emerald-400 text-xs leading-relaxed">{dms}</div>
+        </div>
+        <div className="border-t border-slate-700 pt-4">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-slate-400 uppercase tracking-wider">UTM (WGS84)</span>
+            <CopyButton value={utmStr} label="Copiar" />
+          </div>
+          <div className="font-mono text-cyan-400 text-sm leading-relaxed">
+            Zona {utm.zone}{utm.band} · {utm.hemisphere}<br />
+            E {utm.easting.toLocaleString('es')} m<br />
+            N {utm.northing.toLocaleString('es')} m
+          </div>
         </div>
         <div className="border-t border-slate-700 pt-4">
           <div className="flex items-center justify-between mb-1">

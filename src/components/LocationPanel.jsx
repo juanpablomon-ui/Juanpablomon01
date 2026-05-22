@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import { Navigation, Mountain, Zap, RotateCw, Target } from 'lucide-react';
-
-function toDMS(decimal, isLat) {
-  const dir = isLat ? (decimal >= 0 ? 'N' : 'S') : (decimal >= 0 ? 'E' : 'O');
-  const abs = Math.abs(decimal);
-  const deg = Math.floor(abs);
-  const minF = (abs - deg) * 60;
-  const min  = Math.floor(minF);
-  const sec  = ((minF - min) * 60).toFixed(2);
-  return `${deg}° ${min}' ${sec}" ${dir}`;
-}
+import { toDMS, toUTM } from '../utils/coords';
 
 function getCardinal(h) {
   if (h == null) return '—';
@@ -120,27 +111,68 @@ export function LocationPanel({ location, error, loading, heading, requestCompas
             </button>
           )}
         </div>
-        {location ? (
-          <div className="space-y-3">
-            <div>
-              <div className="text-xs text-slate-500 mb-0.5">Decimal (WGS84)</div>
-              <div className="font-mono text-emerald-400 text-base leading-snug">
-                {location.lat.toFixed(7)}°<br />
-                {location.lon.toFixed(7)}°
+        {location ? (() => {
+          const utm = toUTM(location.lat, location.lon);
+          return (
+            <div className="space-y-3">
+              {/* Geographic decimal */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-500">Geográficas Decimales (GD)</div>
+                  <button
+                    onClick={() => copyToClipboard(`${location.lat.toFixed(7)}, ${location.lon.toFixed(7)}`)}
+                    className="text-xs text-slate-500 active:text-white"
+                  >📋</button>
+                </div>
+                <div className="font-mono text-emerald-400 text-sm leading-snug mt-0.5">
+                  {location.lat.toFixed(7)}°&nbsp;&nbsp;{location.lat >= 0 ? 'N' : 'S'}<br />
+                  {location.lon.toFixed(7)}°&nbsp;&nbsp;{location.lon >= 0 ? 'E' : 'O'}
+                </div>
+              </div>
+
+              {/* DMS */}
+              <div className="border-t border-slate-700 pt-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-500">Geográficas GMS (°&nbsp;′&nbsp;″)</div>
+                  <button
+                    onClick={() => copyToClipboard(`${toDMS(location.lat, true)}, ${toDMS(location.lon, false)}`)}
+                    className="text-xs text-slate-500 active:text-white"
+                  >📋</button>
+                </div>
+                <div className="font-mono text-emerald-400 text-xs leading-relaxed mt-0.5">
+                  {toDMS(location.lat, true)}<br />
+                  {toDMS(location.lon, false)}
+                </div>
+              </div>
+
+              {/* UTM */}
+              <div className="border-t border-slate-700 pt-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-500">UTM (WGS84)</div>
+                  <button
+                    onClick={() => copyToClipboard(
+                      `${utm.zone}${utm.band} ${utm.hemisphere} E:${utm.easting} N:${utm.northing}`
+                    )}
+                    className="text-xs text-slate-500 active:text-white"
+                  >📋</button>
+                </div>
+                <div className="font-mono text-cyan-400 text-sm leading-relaxed mt-0.5">
+                  <span className="text-slate-400 text-xs">Zona </span>{utm.zone}{utm.band}
+                  &nbsp;·&nbsp;
+                  <span className="text-slate-400 text-xs">H </span>{utm.hemisphere}<br />
+                  <span className="text-slate-400 text-xs">E&nbsp;</span>
+                  {utm.easting.toLocaleString('es')} m<br />
+                  <span className="text-slate-400 text-xs">N&nbsp;</span>
+                  {utm.northing.toLocaleString('es')} m
+                </div>
+              </div>
+
+              <div className="text-xs text-slate-500">
+                Precisión GPS: ±{location.accuracy ? Math.round(location.accuracy) : '—'} m
               </div>
             </div>
-            <div className="border-t border-slate-700 pt-3">
-              <div className="text-xs text-slate-500 mb-0.5">Grados, Minutos, Segundos</div>
-              <div className="font-mono text-emerald-400 text-xs leading-relaxed">
-                {toDMS(location.lat, true)}<br />
-                {toDMS(location.lon, false)}
-              </div>
-            </div>
-            <div className="text-xs text-slate-500">
-              Precisión: ±{location.accuracy ? Math.round(location.accuracy) : '—'} m
-            </div>
-          </div>
-        ) : (
+          );
+        })() : (
           <div className="text-slate-500 text-sm">Sin señal GPS</div>
         )}
       </div>
